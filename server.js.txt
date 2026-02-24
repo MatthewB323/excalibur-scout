@@ -1,0 +1,364 @@
+const express = require('express');
+const cors = require('cors');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
+
+const app = express();
+// Cloud providers assign their own ports, so we use process.env.PORT
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+// Tells the server to serve frontend files from the 'public' folder
+app.use(express.static('public'));
+
+// Setup multer for file uploads
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Initialize SQLite database
+const dbPath = path.join(__dirname, 'scout_data.db');
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('Database connection error:', err);
+    } else {
+        console.log('Connected to SQLite database');
+        initializeDatabase();
+    }
+});
+
+// Initialize database tables
+function initializeDatabase() {
+    db.serialize(() => {
+        // Teams table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS teams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_number TEXT UNIQUE NOT NULL,
+                data TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // States teams table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS states_teams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_number TEXT UNIQUE NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Notes table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS team_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                team_number TEXT UNIQUE NOT NULL,
+                content TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Column headers table (for CSV columns)
+        db.run(`
+            CREATE TABLE IF NOT EXISTS column_headers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                header_name TEXT UNIQUE NOT NULL
+            )
+        `);
+    });
+}
+
+// API Routes
+
+// Get all teams
+app.get('/api/teams', (req, res) => {
+    db.all('SELECT * FROM teams', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        const teams = rows.map(row => ({
+            ...JSON.parse(row.data),
+            _id: row.id,
+            _teamNumber: row.team_number
+        }));
+        res.json(teams);
+    });
+});
+
+// Get column headers
+app.get('/api/headers', (req, res) => {
+    db.all('SELECT header_name FROM column_headers ORDER BY id', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows.map(r => r.header_name));
+    });
+});
+
+// Upload CSV
+app.post('/api/upload-csv', upload.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file provided' });
+        }
+
+        const csvContent = req.file.buffer.toString('utf-8');
+        const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
+
+        // Detect headers
+        let headerIdx = 0;
+        let headers = [];
+
+        for (let i = 0; i < Math.min(5, lines.length); i++) {
+            const parts = lines[i].split(',').map(p => p.trim());
+            const isHeader = parts.some(p => isNaN(p) && p.length > 0) && parts.length > 2;
+
+            if (isHeader && parts.some(p => 
+                p.toLowerCase().includes('team') || 
+                p.toLowerCase().includes('points') || 
+                p.toLowerCase().includes('rank')
+            )) {
+                headers = parts;
+                headerIdx = i + 1;
+                break;
+            }
+        }
+
+        if (headers.length === 0) {
+            headers = lines[0].split(',').map(h => h.trim());
+            headerIdx = 1;
+        }
+
+        // Store headers
+        db.run('DELETE FROM column_headers', () => {
+            headers.forEach(header => {
+                db.run('INSERT OR IGNORE INTO column_headers (header_name) VALUES (?)', [header]);
+            });
+        });
+
+        // Parse and store teams
+        const teamsToInsert = [];
+        for (let i = headerIdx; i < lines.length; i++) {
+            if (lines[i].trim() === '') continue;
+
+            const values = lines[i].split(',').map(v => v.trim());
+            const team = {};
+            headers.forEach((header, idx) => {
+                team[header] = values[idx] || '';
+            });
+
+            const teamId = team['team'] || team['Team Number'] || team['team_number'] || team['Team'] || team['TeamNumber'];
+            if (teamId && teamId !== '') {
+                teamsToInsert.push({ teamNumber: teamId.toString(), data: team });
+            }
+        }
+
+        // Insert teams into database
+        db.run('DELETE FROM teams', () => {
+            teamsToInsert.forEach(team => {
+                db.run(
+                    'INSERT OR REPLACE INTO teams (team_number, data) VALUES (?, ?)',
+                    [team.teamNumber, JSON.stringify(team.data)],
+                    (err) => {
+                        if (err) console.error('Insert error:', err);
+                    }
+                );
+            });
+
+            res.json({ 
+                success: true, 
+                count: teamsToInsert.length,
+                message: `Loaded ${teamsToInsert.length} teams successfully!`
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get states teams
+app.get('/api/states-teams', (req, res) => {
+    db.all('SELECT team_number FROM states_teams', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows.map(r => r.team_number));
+    });
+});
+
+// Toggle states team
+app.post('/api/toggle-states-team', express.json(), (req, res) => {
+    const { teamNumber } = req.body;
+    if (!teamNumber) {
+        return res.status(400).json({ error: 'Team number required' });
+    }
+
+    // Check if exists
+    db.get('SELECT * FROM states_teams WHERE team_number = ?', [teamNumber], (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (row) {
+            // Delete
+            db.run('DELETE FROM states_teams WHERE team_number = ?', [teamNumber], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, action: 'removed' });
+            });
+        } else {
+            // Insert
+            db.run('INSERT INTO states_teams (team_number) VALUES (?)', [teamNumber], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, action: 'added' });
+            });
+        }
+    });
+});
+
+// Get team notes
+app.get('/api/notes', (req, res) => {
+    db.all('SELECT team_number, content, updated_at FROM team_notes', (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        const notes = {};
+        rows.forEach(row => {
+            notes[row.team_number] = {
+                content: row.content,
+                timestamp: row.updated_at
+            };
+        });
+        res.json(notes);
+    });
+});
+
+// Save team notes
+app.post('/api/save-notes', express.json(), (req, res) => {
+    const { teamNumber, content } = req.body;
+    if (!teamNumber) {
+        return res.status(400).json({ error: 'Team number required' });
+    }
+
+    db.run(
+        'INSERT OR REPLACE INTO team_notes (team_number, content, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+        [teamNumber, content],
+        (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, message: 'Notes saved' });
+        }
+    );
+});
+
+// Export states teams
+app.get('/api/export-states', (req, res) => {
+    db.all(`
+        SELECT t.data FROM teams t
+        INNER JOIN states_teams st ON t.team_number = st.team_number
+        ORDER BY t.team_number
+    `, (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (rows.length === 0) {
+            return res.status(400).json({ error: 'No states teams to export' });
+        }
+
+        // Get headers
+        db.all('SELECT header_name FROM column_headers ORDER BY id', (err, headerRows) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+
+            const headers = headerRows.map(r => r.header_name);
+            let csv = headers.join(',') + '\n';
+
+            rows.forEach(row => {
+                const teamData = JSON.parse(row.data);
+                csv += headers.map(h => teamData[h] || '').join(',') + '\n';
+            });
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=excalibur-states-teams.csv');
+            res.send(csv);
+        });
+    });
+});
+
+// Export all data
+app.get('/api/export-all', (req, res) => {
+    db.all('SELECT data FROM teams ORDER BY team_number', (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+
+        if (rows.length === 0) {
+            return res.status(400).json({ error: 'No data to export' });
+        }
+
+        db.all('SELECT header_name FROM column_headers ORDER BY id', (err, headerRows) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+
+            const headers = headerRows.map(r => r.header_name);
+            let csv = headers.join(',') + '\n';
+
+            rows.forEach(row => {
+                const teamData = JSON.parse(row.data);
+                csv += headers.map(h => teamData[h] || '').join(',') + '\n';
+            });
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=excalibur-scout-all.csv');
+            res.send(csv);
+        });
+    });
+});
+
+// Clear all data
+app.post('/api/clear-all', express.json(), (req, res) => {
+    db.serialize(() => {
+        db.run('DELETE FROM teams');
+        db.run('DELETE FROM states_teams');
+        db.run('DELETE FROM team_notes');
+        db.run('DELETE FROM column_headers', () => {
+            res.json({ success: true, message: 'All data cleared' });
+        });
+    });
+});
+
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'Server running' });
+});
+
+// Serve index.html for all other routes (SPA)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`🚀 EXCALIBUR SCOUT running on port ${PORT}`);
+    console.log(`Database: ${dbPath}`);
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+    db.close((err) => {
+        if (err) console.error('Database close error:', err);
+        console.log('Database closed');
+        process.exit(0);
+    });
+});

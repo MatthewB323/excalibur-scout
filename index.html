@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXCALIBUR Scout - FTC Decode Season</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Audiowide&family=Titillium+Web:wght@400;600;700&display=swap');
+
+        :root {
+            --primary: #6B2D8E;
+            --primary-light: #8B3BAE;
+            --primary-dark: #4A1A5C;
+            --secondary: #1A1A1A;
+            --accent: #FFD700;
+            --accent-light: #FFF44F;
+            --text-light: #F5F5F5;
+            --text-muted: #B0B0B0;
+            --border-color: #333333;
+            --success: #00DD88;
+            --danger: #FF4444;
+        }
+
+        body {
+            font-family: 'Titillium Web', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0d2e 50%, #0a0a0a 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Grid background effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(107, 45, 142, 0.05) 25%, rgba(107, 45, 142, 0.05) 26%, transparent 27%, transparent 74%, rgba(107, 45, 142, 0.05) 75%, rgba(107, 45, 142, 0.05) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(107, 45, 142, 0.05) 25%, rgba(107, 45, 142, 0.05) 26%, transparent 27%, transparent 74%, rgba(107, 45, 142, 0.05) 75%, rgba(107, 45, 142, 0.05) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            height: 100vh;
+            gap: 1px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            grid-column: 1 / -1;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--accent), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-family: 'Audiowide', sans-serif;
+            letter-spacing: 2px;
+        }
+
+        .header-text h1 {
+            font-family: 'Audiowide', sans-serif;
+            font-size: 1.8rem;
+            letter-spacing: 3px;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .header-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .state-filter-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .state-filter-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .state-filter-btn.active {
+            background: var(--accent);
+            color: var(--secondary);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: var(--secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(107, 45, 142, 0.2);
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            border-color: var(--accent);
+            color: var(--accent);
+            font-weight: 600;
+            box-shadow: 0 0 10px rgba(107, 45, 142, 0.5);
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: var(--secondary);
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .content::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-light);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: 'Titillium Web', sans-serif;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: var(--text-light);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(107, 45, 142, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(107, 45, 142, 0.2);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--secondary);
+            border: none;
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 0 15px rgba(0, 221, 136, 0.5);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* File upload area */
+        .upload-area {
+            border: 2px dashed var(--primary);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(107, 45, 142, 0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: rgba(255, 215, 0, 0.05);
+            box-shadow: 0 0 20px rgba(107, 45, 142, 0.2);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--accent);
+            background: rgba(255, 215, 0, 0.15);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .upload-area .btn {
+            margin-top: 1rem;
+        }
+
+        #csvFile {
+            display: none;
+        }
+
+        /* Scout data display */
+        .scout-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .scout-card {
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.8), rgba(107, 45, 142, 0.1));
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scout-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .scout-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(107, 45, 142, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .team-number {
+            font-family: 'Audiowide', sans-serif;
+            font-size: 1.5rem;
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(107, 45, 142, 0.2);
+            font-size: 0.9rem;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            color: var(--accent-light);
+            font-weight: 600;
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* Table view */
+        .table-container {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: auto;
+            margin-top: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        thead {
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+            border-bottom: 2px solid var(--accent);
+            position: sticky;
+            top: 0;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-light);
+        }
+
+        tbody tr:hover {
+            background: rgba(107, 45, 142, 0.15);
+            cursor: pointer;
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Analytics filter styling */
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.6rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--primary);
+            color: var(--text-light);
+            border-radius: 4px;
+            font-family: 'Titillium Web', sans-serif;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(107, 45, 142, 0.5);
+        }
+
+        /* Analytics table specific */
+        #analyticsTable {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        #analyticsTable thead {
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+            border-bottom: 2px solid var(--accent);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        #analyticsTable th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        #analyticsTable th:hover {
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        #analyticsTable td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-light);
+        }
+
+        #analyticsTable tbody tr:hover {
+            background: rgba(107, 45, 142, 0.15);
+            cursor: pointer;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            position: relative;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        .tab:hover {
+            color: var(--accent);
+        }
+
+        .tab.active {
+            color: var(--accent);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* States selection checkbox */
+        .team-row-selectable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .team-row-selectable:hover {
+            background: rgba(107, 45, 142, 0.2) !important;
+        }
+
+        .team-row-selectable.selected {
+            background: rgba(255, 215, 0, 0.1) !important;
+            border-left: 3px solid var(--accent);
+        }
+
+        .states-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: var(--secondary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.95), rgba(107, 45, 142, 0.2));
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 40px rgba(107, 45, 142, 0.4);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .modal-header h2 {
+            color: var(--accent);
+            font-family: 'Audiowide', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            color: var(--accent);
+            transform: scale(1.2);
+        }
+
+        /* Status message */
+        .status-message {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 4px;
+            background: var(--success);
+            color: var(--secondary);
+            font-weight: 600;
+            z-index: 999;
+            animation: slideIn 0.3s ease, slideOut 0.3s ease 2.7s;
+        }
+
+        .status-message.error {
+            background: var(--danger);
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Form inputs */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--primary);
+            border-radius: 4px;
+            color: var(--text-light);
+            font-family: 'Titillium Web', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(107, 45, 142, 0.5);
+            background: rgba(107, 45, 142, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 100px;
+                flex-direction: row;
+                overflow-x: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .nav-section {
+                display: flex;
+                gap: 1rem;
+                white-space: nowrap;
+                flex: 1;
+                border: none;
+                padding: 0.5rem 1rem;
+            }
+
+            .nav-item {
+                margin-bottom: 0;
+            }
+
+            .scout-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="nav-section">
+                <div class="nav-title">Navigation</div>
+                <button class="nav-item active" data-view="dashboard">📊 Dashboard</button>
+                <button class="nav-item" data-view="teams">🤖 Team Data</button>
+                <button class="nav-item" data-view="analytics">📈 Analytics</button>
+                <button class="nav-item" data-view="settings">⚙️ Settings</button>
+            </div>
+
+            <div class="nav-section" style="margin-top: auto; padding-bottom: 2rem;">
+                <div class="nav-title">Quick Lists</div>
+                <button class="nav-item" id="allTeamsBtn" onclick="showAllTeamsList()" style="background: rgba(107, 45, 142, 0.2); border-color: var(--accent);">📋 All Teams</button>
+                <button class="nav-item" id="statesTeamsBtn" onclick="showStatesTeamsList()" style="background: rgba(0, 221, 136, 0.1); border-color: var(--success);">🏆 States Teams</button>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <div class="logo-icon">⚔️</div>
+                    <div class="header-text">
+                        <h1>EXCALIBUR SCOUT</h1>
+                        <p>FTC Decode Season Scouting System</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <span id="dataCount" style="color: var(--accent); margin-right: 2rem; font-weight: bold;">0 Teams</span>
+                    <div id="stateFilters" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                        </div>
+                </div>
+            </header>
+
+            <div class="content">
+                <div id="dashboard" class="view active">
+                    <div style="max-width: 1200px; margin: 0 auto;">
+                        <div style="text-align: center; margin-bottom: 3rem;">
+                            <div style="font-size: 4rem; margin-bottom: 1rem;">⚔️</div>
+                            <h1 style="font-family: 'Audiowide', sans-serif; font-size: 2.5rem; color: var(--accent); letter-spacing: 3px; margin-bottom: 0.5rem;">EXCALIBUR SCOUT</h1>
+                            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 2rem;">FTC Decode Season Scouting System</p>
+                        </div>
+
+                        <div class="scout-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 3rem;">
+                            <div class="scout-card">
+                                <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.5rem;">Total Teams</div>
+                                <div id="dashTotalTeams" style="font-size: 2.5rem; color: var(--accent); font-weight: bold; font-family: 'Space Mono', monospace;">0</div>
+                            </div>
+                            <div class="scout-card">
+                                <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.5rem;">States Teams</div>
+                                <div id="dashStatesTeams" style="font-size: 2.5rem; color: var(--success); font-weight: bold; font-family: 'Space Mono', monospace;">0</div>
+                            </div>
+                            <div class="scout-card">
+                                <div style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 0.5rem;">Notes Added</div>
+                                <div id="dashTotalNotes" style="font-size: 2.5rem; color: var(--accent-light); font-weight: bold; font-family: 'Space Mono', monospace;">0</div>
+                            </div>
+                        </div>
+
+                        <div style="max-width: 600px; margin: 0 auto;">
+                            <h2 style="color: var(--accent); margin-bottom: 1.5rem; font-size: 1.3rem; text-align: center;">Import Team Data</h2>
+                            <div class="upload-area" onclick="document.getElementById('csvFile').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+                                <div class="upload-icon">📥</div>
+                                <p>
+                                    <strong>Click to upload or drag & drop your CSV file</strong><br>
+                                    <span style="font-size: 0.85rem;">Supports any CSV format with team data</span>
+                                </p>
+                                <button class="btn btn-secondary">Select CSV File</button>
+                            </div>
+                            <input type="file" id="csvFile" accept=".csv" onchange="handleFileSelect(event)">
+                        </div>
+
+                        <div style="margin-top: 3rem; text-align: center;">
+                            <p style="color: var(--text-muted); margin-bottom: 1rem;">Get started:</p>
+                            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                                <button class="btn btn-primary" onclick="document.querySelector('[data-view=\"teams\"]').click()">📊 Browse Teams</button>
+                                <button class="btn btn-secondary" onclick="document.querySelector('[data-view=\"analytics\"]').click()">📈 View Analytics</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="teams" class="view">
+                    <h2 style="margin-bottom: 1.5rem; color: var(--accent); font-family: 'Audiowide', sans-serif; font-size: 1.8rem;">🤖 Team Data</h2>
+                    
+                    <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+                        <button class="btn btn-secondary" onclick="switchTeamsView('cards')" id="cardsViewBtn" style="background: var(--primary); border-color: var(--accent); color: var(--accent);">🃏 Card View</button>
+                        <button class="btn btn-secondary" onclick="switchTeamsView('table')" id="tableViewBtn">📊 Table View</button>
+                    </div>
+
+                    <div id="cardsView">
+                        <div id="teamCardsContainer"></div>
+                    </div>
+
+                    <div id="tableView" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--text-light);">Teams Database</h3>
+                            <div style="display: flex; gap: 1rem;">
+                                <button class="btn btn-secondary" onclick="exportStatesTeams()">Export States Teams</button>
+                            </div>
+                        </div>
+
+                        <div class="tabs" id="teamsTabsContainer">
+                            <button class="tab active" data-tab="all-teams">📊 All Teams</button>
+                            <button class="tab" data-tab="states-teams">🏆 Going to States</button>
+                        </div>
+
+                        <div id="all-teams-tab" class="tab-content active">
+                            <div style="margin-bottom: 1rem;">
+                                <input type="text" id="teamSearchInput" placeholder="Search teams by number, name, or location..." style="width: 100%; max-width: 400px; padding: 0.75rem; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--primary); border-radius: 4px; color: var(--text-light);">
+                            </div>
+                            <div id="tableContainer"></div>
+                        </div>
+
+                        <div id="states-teams-tab" class="tab-content">
+                            <div style="margin-bottom: 1rem; padding: 1rem; background: rgba(107, 45, 142, 0.1); border-radius: 4px; border-left: 3px solid var(--accent);">
+                                <p style="color: var(--accent); font-weight: bold;">💡 Tip: Click teams to select them for states competition</p>
+                            </div>
+                            <div id="statesTeamsContainer"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="analytics" class="view">
+                    <h2 style="margin-bottom: 1.5rem; color: var(--accent); font-family: 'Audiowide', sans-serif; font-size: 1.8rem;">📊 Analytics & Data</h2>
+                    
+                    <div style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(107, 45, 142, 0.1); border-radius: 8px; border-left: 3px solid var(--accent);">
+                        <h3 style="color: var(--accent); margin-bottom: 1rem;">Filters</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;" id="filterContainer">
+                            </div>
+                        <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                            <button class="btn btn-secondary" onclick="resetAnalyticsFilters()">🔄 Reset Filters</button>
+                            <button class="btn btn-success" onclick="applyAnalyticsFilters()">✓ Apply Filters</button>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="margin-top: 2rem;">
+                        <table id="analyticsTable" style="width: 100%; border-collapse: collapse;">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="settings" class="view">
+                    <h2 style="margin-bottom: 1.5rem; color: var(--accent); font-family: 'Audiowide', sans-serif; font-size: 1.5rem;">Settings</h2>
+                    <div style="max-width: 500px;">
+                        <div class="form-group">
+                            <label>Review All Notes</label>
+                            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">View all team notes in one place.</p>
+                            <button class="btn btn-secondary" onclick="showAllNotes()">View All Notes</button>
+                        </div>
+                        <div class="form-group">
+                            <label>Export Data</label>
+                            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Download current team data as CSV file and notes as JSON.</p>
+                            <button class="btn btn-secondary" onclick="exportData()">Export Data & Notes</button>
+                        </div>
+                        <div class="form-group">
+                            <label>Clear All Data</label>
+                            <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Remove all imported team data and reset the application.</p>
+                            <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="teamModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTeamNumber"></h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+            
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                <h3 style="color: var(--accent); margin-bottom: 1rem; font-size: 1.1rem;">📝 Team Notes</h3>
+                <div class="form-group">
+                    <textarea id="teamNotesTextarea" placeholder="Add observations, strategy notes, weaknesses, strengths, etc..." style="min-height: 150px; resize: vertical; font-family: 'Titillium Web', sans-serif;"></textarea>
+                </div>
+                <div id="notesTimestamp" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; min-height: 20px;"></div>
+                <button class="btn btn-success" onclick="saveTeamNotes()" style="width: 100%;">💾 Save Notes</button>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+                <button class="btn btn-danger" onclick="deleteTeam()">Delete Team</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage - now uses API
+        let teamsData = [];
+        let statesTeams = [];
+        let teamNotes = {};
+        let currentTeamId = null;
+        let currentStateFilter = null;
+        const API_BASE = '/api'; // Fixed for cloud hosting
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            setupNavigationListeners();
+            setupTeamTabListeners();
+            setupSearchListener();
+            await loadAllData();
+            updateDashboardStats();
+        });
+
+        // API Helper Functions
+        async function loadAllData() {
+            try {
+                const [teams, states, notes, availableStates] = await Promise.all([
+                    fetch(`${API_BASE}/teams`).then(r => r.json()),
+                    fetch(`${API_BASE}/states-teams`).then(r => r.json()),
+                    fetch(`${API_BASE}/notes`).then(r => r.json()),
+                    fetch(`${API_BASE}/states`).then(r => r.ok ? r.json() : [])
+                ]);
+                teamsData = teams;
+                statesTeams = states;
+                teamNotes = notes;
+                if(availableStates.length > 0) renderStateFilters(availableStates);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showMessage('Error connecting to server', 'error');
+            }
+        }
+
+        async function renderStateFilters(states) {
+            const filterContainer = document.getElementById('stateFilters');
+            filterContainer.innerHTML = '';
+            
+            const allBtn = document.createElement('button');
+            allBtn.className = 'state-filter-btn active';
+            allBtn.textContent = 'All Teams';
+            allBtn.onclick = () => filterByState(null);
+            filterContainer.appendChild(allBtn);
+            
+            states.forEach(state => {
+                const btn = document.createElement('button');
+                btn.className = 'state-filter-btn';
+                btn.textContent = state;
+                btn.onclick = () => filterByState(state);
+                btn.id = `state-btn-${state}`;
+                filterContainer.appendChild(btn);
+            });
+        }
+
+        async function filterByState(state) {
+            currentStateFilter = state;
+            
+            document.querySelectorAll('.state-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (state) {
+                document.getElementById(`state-btn-${state}`).classList.add('active');
+                const response = await fetch(`${API_BASE}/teams?state=${state}`);
+                teamsData = await response.json();
+            } else {
+                document.querySelector('[onclick="filterByState(null)"]').classList.add('active');
+                await loadAllData();
+            }
+            
+            renderTeamCardsView();
+            updateDataCount();
+        }
+
+        async function uploadCSV(file) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`${API_BASE}/upload-csv`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+                
+                const result = await response.json();
+                await loadAllData();
+                return result;
+            } catch (error) {
+                console.error('Upload error:', error);
+                throw error;
+            }
+        }
+
+        async function toggleStateTeam(teamNumber) {
+            try {
+                const response = await fetch(`${API_BASE}/toggle-states-team`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ teamNumber: teamNumber.toString() })
+                });
+                
+                if (!response.ok) throw new Error('Toggle failed');
+                
+                const result = await response.json();
+                await loadAllData();
+                return result;
+            } catch (error) {
+                console.error('Toggle error:', error);
+                showMessage('Error updating states team', 'error');
+            }
+        }
+
+        async function saveNotes(teamNumber, content) {
+            try {
+                const response = await fetch(`${API_BASE}/save-notes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        teamNumber: teamNumber.toString(),
+                        content: content 
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Save failed');
+                
+                await loadAllData();
+                return await response.json();
+            } catch (error) {
+                console.error('Save notes error:', error);
+                showMessage('Error saving notes', 'error');
+            }
+        }
+
+        async function clearAllData() {
+            if (!confirm('Are you sure? This will permanently delete all scouting data.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/clear-all`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) throw new Error('Clear failed');
+                
+                await loadAllData();
+                updateDashboardStats();
+                updateDataCount();
+                showMessage('All data cleared');
+            } catch (error) {
+                console.error('Clear error:', error);
+                showMessage('Error clearing data', 'error');
+            }
+        }
+
+        function setupNavigationListeners() {
+            document.querySelectorAll('[data-view]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const view = btn.dataset.view;
+                    switchView(view);
+                    document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        }
+
+        function setupTeamTabListeners() {
+            const tabButtons = document.querySelectorAll('#teamsTabsContainer .tab');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.dataset.tab;
+                    
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    const tabContent = document.getElementById(tabName + '-tab');
+                    if (tabContent) {
+                        tabContent.classList.add('active');
+                    }
+                    
+                    if (tabName === 'all-teams') {
+                        renderTeamsTable();
+                    } else if (tabName === 'states-teams') {
+                        renderStatesTeams();
+                    }
+                });
+            });
+        }
+
+        function setupSearchListener() {
+            const searchInput = document.getElementById('teamSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase();
+                    filterTeamsTable(query);
+                });
+            }
+        }
+
+        function showAllTeamsList() {
+            switchView('teams');
+            setTimeout(() => switchTeamsView('table'), 100);
+            filterByState(null);
+        }
+
+        function showStatesTeamsList() {
+            switchView('teams');
+            setTimeout(() => switchTeamsView('table'), 100);
+            const statesBtn = document.querySelector('[data-tab="states-teams"]');
+            if (statesBtn) statesBtn.click();
+        }
+
+        // Fix: Properly declared the switchView function
+        function switchView(viewName) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            const targetView = document.getElementById(viewName);
+            if (targetView) {
+                targetView.classList.add('active');
+                
+                if (viewName === 'teams') {
+                    renderTeamCardsView();
+                    setupTeamTabListeners();
+                    setupSearchListener();
+                }
+                if (viewName === 'analytics') {
+                    renderAnalyticsTable();
+                }
+            }
+        }
+
+        function switchTeamsView(view) {
+            const cardsView = document.getElementById('cardsView');
+            const tableView = document.getElementById('tableView');
+            const cardsBtn = document.getElementById('cardsViewBtn');
+            const tableBtn = document.getElementById('tableViewBtn');
+
+            if (view === 'cards') {
+                cardsView.style.display = 'block';
+                tableView.style.display = 'none';
+                cardsBtn.style.background = 'var(--primary)';
+                cardsBtn.style.borderColor = 'var(--accent)';
+                cardsBtn.style.color = 'var(--accent)';
+                tableBtn.style.background = 'transparent';
+                tableBtn.style.color = 'var(--text-light)';
+                renderTeamCardsView();
+            } else {
+                cardsView.style.display = 'none';
+                tableView.style.display = 'block';
+                tableBtn.style.background = 'var(--primary)';
+                tableBtn.style.borderColor = 'var(--accent)';
+                tableBtn.style.color = 'var(--accent)';
+                cardsBtn.style.background = 'transparent';
+                cardsBtn.style.color = 'var(--text-light)';
+                renderTeamsTable();
+            }
+        }
+
+        function renderTeamCardsView() {
+            const container = document.getElementById('teamCardsContainer');
+            
+            if (teamsData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📁</div>
+                        <p>No team data loaded yet</p>
+                        <p style="font-size: 0.9rem;">Go to Dashboard and upload a CSV file to begin</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            teamsData.forEach(team => {
+                const teamCard = createTeamCard(team);
+                container.appendChild(teamCard);
+            });
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function dragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function dropFile(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleCSVUpload(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleCSVUpload(files[0]);
+            }
+        }
+
+        async function handleCSVUpload(file) {
+            try {
+                const result = await uploadCSV(file);
+                showMessage(result.message);
+                updateDashboardStats();
+                renderTeamCardsView();
+                updateDataCount();
+            } catch (error) {
+                showMessage('Error uploading CSV file', 'error');
+            }
+        }
+
+        function updateDashboardStats() {
+            document.getElementById('dashTotalTeams').textContent = teamsData.length;
+            document.getElementById('dashStatesTeams').textContent = statesTeams.length;
+            
+            const notesCount = Object.values(teamNotes).filter(note => note.content && note.content.trim()).length;
+            document.getElementById('dashTotalNotes').textContent = notesCount;
+        }
+
+        function createTeamCard(team) {
+            const card = document.createElement('div');
+            card.className = 'scout-card';
+            
+            const teamNum = team['team'] || team['Team Number'] || team['team_number'] || team['Team'] || team['TeamNumber'] || 'Unknown';
+            const hasNotes = teamNotes[teamNum.toString()] && teamNotes[teamNum.toString()].content;
+            const state = team._state || 'SC';
+            
+            const allKeys = Object.keys(team).filter(k => !k.startsWith('_'));
+            const priorityKeywords = ['points', 'rank', 'record', 'wins', 'auto', 'teleop', 'endgame', 'climb', 'opr', 'dpr'];
+            
+            const sortedKeys = allKeys.sort((a, b) => {
+                const aHasKeyword = priorityKeywords.some(kw => a.toLowerCase().includes(kw));
+                const bHasKeyword = priorityKeywords.some(kw => b.toLowerCase().includes(kw));
+                return bHasKeyword - aHasKeyword;
+            });
+            
+            let stats = '';
+            sortedKeys.slice(0, 6).forEach(key => {
+                if (key !== 'team' && key !== 'Team Number' && key !== 'team_number' && key !== 'Team' && key !== 'TeamNumber') {
+                    const value = team[key];
+                    const displayValue = formatValue(value);
+                    const displayLabel = formatLabel(key);
+                    stats += `
+                        <div class="stat-row">
+                            <span class="stat-label">${displayLabel}</span>
+                            <span class="stat-value">${displayValue}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div class="team-number">${teamNum}</div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span style="background: var(--primary); color: var(--accent); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">${state}</span>
+                        ${hasNotes ? '<div style="background: var(--accent); color: var(--secondary); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">📝</div>' : ''}
+                    </div>
+                </div>
+                ${stats}
+            `;
+            
+            card.addEventListener('click', () => showTeamModal(team));
+            return card;
+        }
+
+        function formatLabel(label) {
+            return label
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/_/g, ' ')
+                .replace(/([a-z])([A-Z])/g, '$1 $2')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ')
+                .trim();
+        }
+
+        function formatValue(value) {
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            if (Number.isInteger(num)) return num.toString();
+            return num.toFixed(2);
+        }
+
+        function showTeamModal(team) {
+            currentTeamId = team['team'] || team['Team Number'] || team['team_number'] || team['Team'] || team['TeamNumber'];
+            const modalTeamNumber = document.getElementById('modalTeamNumber');
+            const modalBody = document.getElementById('modalBody');
+            
+            modalTeamNumber.textContent = `Team ${currentTeamId}`;
+            
+            let content = '';
+            Object.keys(team).forEach(key => {
+                const displayLabel = formatLabel(key);
+                const displayValue = formatValue(team[key]);
+                content += `
+                    <div class="form-group">
+                        <label>${displayLabel}</label>
+                        <input type="text" value="${displayValue}" readonly style="cursor: not-allowed; opacity: 0.7;">
+                    </div>
+                `;
+            });
+            
+            modalBody.innerHTML = content;
+            
+            const notesTextarea = document.getElementById('teamNotesTextarea');
+            const notesTimestamp = document.getElementById('notesTimestamp');
+            const teamNumStr = currentTeamId.toString();
+            
+            if (teamNotes[teamNumStr]) {
+                notesTextarea.value = teamNotes[teamNumStr].content || '';
+                const timestamp = new Date(teamNotes[teamNumStr].timestamp);
+                notesTimestamp.textContent = `Last updated: ${timestamp.toLocaleString()}`;
+            } else {
+                notesTextarea.value = '';
+                notesTimestamp.textContent = '';
+            }
+            
+            document.getElementById('teamModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('teamModal').classList.remove('active');
+            currentTeamId = null;
+        }
+
+        function saveTeamNotes() {
+            if (!currentTeamId) return;
+            
+            const notesContent = document.getElementById('teamNotesTextarea').value;
+            const teamNumStr = currentTeamId.toString();
+            
+            saveNotes(teamNumStr, notesContent).then(() => {
+                const timestamp = new Date();
+                document.getElementById('notesTimestamp').textContent = `Last updated: ${timestamp.toLocaleString()}`;
+                
+                updateDashboardStats();
+                showMessage('Notes saved successfully!');
+            });
+        }
+
+        function deleteTeam() {
+            teamsData = teamsData.filter(t => {
+                const teamNum = t['Team Number'] || t['team_number'] || t['Team'];
+                return teamNum !== currentTeamId;
+            });
+            closeModal();
+            renderTeamCardsView();
+            updateDashboardStats();
+            updateDataCount();
+            showMessage('Team deleted successfully');
+        }
+
+        function renderTeamsTable() {
+            const container = document.getElementById('tableContainer');
+            
+            if (teamsData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
+                        <p>No team data available</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const headers = Object.keys(teamsData[0]);
+            let table = `
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                ${headers.map(h => `<th>${formatLabel(h)}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            teamsData.forEach(team => {
+                const teamNum = team['team'] || team['Team Number'] || team['team_number'] || team['Team'] || team['TeamNumber'];
+                const isSelected = statesTeams.includes(teamNum.toString());
+                const selectedClass = isSelected ? 'selected' : '';
+                const hasNotes = teamNotes[teamNum.toString()] && teamNotes[teamNum.toString()].content;
+                const state = team._state || 'SC';
+                
+                table += `<tr class="team-row-selectable ${selectedClass}" onclick="toggleTeamStates('${teamNum}')">`;
+                table += `<td style="text-align: center;"><input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()"></td>`;
+                
+                headers.forEach((header, idx) => {
+                    const value = formatValue(team[header]);
+                    if (idx === 0) {
+                        table += `<td><span style="display: inline-flex; align-items: center; gap: 0.5rem;"><span>${value}</span><span style="background: var(--primary); color: var(--accent); padding: 0.15rem 0.35rem; border-radius: 3px; font-size: 0.65rem; font-weight: bold;">${state}</span>${hasNotes ? '<span style="background: var(--accent); color: var(--secondary); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.7rem; font-weight: bold;">📝</span>' : ''}</span></td>`;
+                    } else {
+                        table += `<td>${value}</td>`;
+                    }
+                });
+                table += '</tr>';
+            });
+
+            table += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = table;
+        }
+
+        function filterTeamsTable(query) {
+            const rows = document.querySelectorAll('.team-row-selectable');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        function toggleTeamStates(teamNum) {
+            toggleStateTeam(teamNum).then(() => {
+                updateDashboardStats();
+                renderTeamsTable();
+                renderStatesTeams();
+            });
+        }
+
+        function renderStatesTeams() {
+            const container = document.getElementById('statesTeamsContainer');
+            
+            if (statesTeams.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🏆</div>
+                        <p>No teams selected for states yet</p>
+                        <p style="font-size: 0.9rem; color: var(--text-muted);">Select teams in the "All Teams" tab</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const statesTeamsData = teamsData.filter(team => {
+                const teamNum = team['team'] || team['Team Number'] || team['team_number'] || team['Team'] || team['TeamNumber'];
+                return statesTeams.includes(teamNum.toString());
+            });
+
+            let html = `<div style="margin-bottom: 1rem; padding: 1rem; background: rgba(0, 221, 136, 0.1); border-radius: 4px; border-left: 3px solid var(--success);">
+                <p style="color: var(--success); font-weight: bold;">✅ ${statesTeams.length} team${statesTeams.length !== 1 ? 's' : ''} selected for states</p>
+            </div>`;
+
+            html += `<div class="scout-grid">`;
+            
+            statesTeamsData.forEach(team => {
+                const teamNum = team['team'] || team['Team Number'] || team['team_number'] || team['Team'] || team['TeamNumber'];
+                const state = team._state || 'SC';
+                html += `<div class="scout-card" style="cursor: pointer; position: relative;" onclick="showTeamModal(${JSON.stringify(team).replace(/"/g, '&quot;')})">`;
+                html += `<div style="position: absolute; top: 1rem; right: 1rem; font-size: 1.2rem; cursor: pointer;" onclick="event.stopPropagation(); toggleTeamStates('${teamNum}')">✕</div>`;
+                html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div class="team-number">${teamNum}</div>
+                    <span style="background: var(--primary); color: var(--accent); padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">${state}</span>
+                </div>`;
+                
+                const allKeys = Object.keys(team).filter(k => !k.startsWith('_'));
+                const priorityKeywords = ['points', 'rank', 'record', 'wins', 'auto', 'teleop', 'endgame', 'climb', 'opr', 'dpr', 'name', 'location'];
+                
+                const sortedKeys = allKeys.sort((a, b) => {
+                    const aHasKeyword = priorityKeywords.some(kw => a.toLowerCase().includes(kw));
+                    const bHasKeyword = priorityKeywords.some(kw => b.toLowerCase().includes(kw));
+                    return bHasKeyword - aHasKeyword;
+                });
+                
+                sortedKeys.slice(0, 5).forEach(key => {
+                    if (key !== 'team' && key !== 'Team Number' && key !== 'team_number' && key !== 'Team' && key !== 'TeamNumber') {
+                        const value = team[key];
+                        const displayValue = formatValue(value);
+                        const displayLabel = formatLabel(key);
+                        html += `
+                            <div class="stat-row">
+                                <span class="stat-label">${displayLabel}</span>
+                                <span class="stat-value">${displayValue}</span>
+                            </div>
+                        `;
+                    }
+                });
+                
+                html += `</div>`;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        let analyticsFilters = {};
+        let filteredAnalyticsData = [];
+
+        function renderAnalyticsTable() {
+            if (teamsData.length === 0) {
+                const container = document.getElementById('analyticsTable');
+                container.innerHTML = `
+                    <tr><td colspan="100%" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        No team data available. Upload a CSV file first.
+                    </td></tr>
+                `;
+                return;
+            }
+
+            generateFilterControls();
+            filteredAnalyticsData = JSON.parse(JSON.stringify(teamsData));
+            renderAnalyticsTableData();
+        }
+
+        function generateFilterControls() {
+            const filterContainer = document.getElementById('filterContainer');
+            const headers = Object.keys(teamsData[0]);
+            
+            filterContainer.innerHTML = '';
+            analyticsFilters = {};
+
+            headers.forEach(header => {
+                const values = teamsData.map(t => t[header]).filter((v, i, a) => a.indexOf(v) === i);
+                
+                if (values.length <= 20) {
+                    const filterDiv = document.createElement('div');
+                    filterDiv.className = 'filter-group';
+                    filterDiv.innerHTML = `
+                        <label>${formatLabel(header)}</label>
+                        <select data-filter="${header}">
+                            <option value="">All</option>
+                            ${values.map(v => `<option value="${v}">${v}</option>`).join('')}
+                        </select>
+                    `;
+                    filterContainer.appendChild(filterDiv);
+                } else {
+                    const filterDiv = document.createElement('div');
+                    filterDiv.className = 'filter-group';
+                    filterDiv.innerHTML = `
+                        <label>${formatLabel(header)}</label>
+                        <input type="text" data-filter="${header}" placeholder="Search...">
+                    `;
+                    filterContainer.appendChild(filterDiv);
+                }
+            });
+        }
+
+        function applyAnalyticsFilters() {
+            analyticsFilters = {};
+            
+            document.querySelectorAll('[data-filter]').forEach(el => {
+                const filterKey = el.dataset.filter;
+                const value = el.value.toLowerCase().trim();
+                if (value) {
+                    analyticsFilters[filterKey] = value;
+                }
+            });
+
+            filteredAnalyticsData = teamsData.filter(team => {
+                return Object.entries(analyticsFilters).every(([key, value]) => {
+                    const teamValue = (team[key] || '').toString().toLowerCase();
+                    return teamValue.includes(value);
+                });
+            });
+
+            renderAnalyticsTableData();
+            showMessage(`Showing ${filteredAnalyticsData.length} of ${teamsData.length} teams`);
+        }
+
+        function resetAnalyticsFilters() {
+            document.querySelectorAll('[data-filter]').forEach(el => {
+                el.value = '';
+            });
+            analyticsFilters = {};
+            filteredAnalyticsData = JSON.parse(JSON.stringify(teamsData));
+            renderAnalyticsTableData();
+            showMessage('Filters reset');
+        }
+
+        function renderAnalyticsTableData() {
+            const table = document.getElementById('analyticsTable');
+            const headers = Object.keys(teamsData[0]);
+
+            let headerHtml = '<tr>';
+            headers.forEach(header => {
+                headerHtml += `<th onclick="sortAnalyticsTable('${header}')">${formatLabel(header)}</th>`;
+            });
+            headerHtml += '</tr>';
+            table.querySelector('thead').innerHTML = headerHtml;
+
+            let bodyHtml = '';
+            filteredAnalyticsData.forEach(team => {
+                bodyHtml += '<tr onclick="showTeamModal(' + JSON.stringify(team).replace(/"/g, '&quot;') + ')">';
+                headers.forEach(header => {
+                    const value = formatValue(team[header]);
+                    bodyHtml += `<td>${value}</td>`;
+                });
+                bodyHtml += '</tr>';
+            });
+
+            if (filteredAnalyticsData.length === 0) {
+                bodyHtml = '<tr><td colspan="' + headers.length + '" style="text-align: center; padding: 2rem; color: var(--text-muted);">No teams match the selected filters</td></tr>';
+            }
+
+            table.querySelector('tbody').innerHTML = bodyHtml;
+        }
+
+        function sortAnalyticsTable(column) {
+            const isNumeric = filteredAnalyticsData.every(t => !isNaN(parseFloat(t[column])));
+            
+            filteredAnalyticsData.sort((a, b) => {
+                if (isNumeric) {
+                    return parseFloat(b[column]) - parseFloat(a[column]);
+                } else {
+                    return (a[column] || '').toString().localeCompare((b[column] || '').toString());
+                }
+            });
+
+            renderAnalyticsTableData();
+        }
+
+        function showAllNotes() {
+            const notesEntries = Object.entries(teamNotes).filter(([_, data]) => data.content);
+            
+            if (notesEntries.length === 0) {
+                showMessage('No notes added yet', 'error');
+                return;
+            }
+
+            let content = `<div style="margin-bottom: 2rem;">`;
+            notesEntries.forEach(([teamNum, data]) => {
+                const timestamp = new Date(data.timestamp);
+                content += `
+                    <div style="background: rgba(107, 45, 142, 0.1); border-left: 3px solid var(--accent); padding: 1rem; margin-bottom: 1rem; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <h3 style="color: var(--accent); margin: 0;">Team ${teamNum}</h3>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">${timestamp.toLocaleString()}</span>
+                        </div>
+                        <p style="color: var(--text-light); white-space: pre-wrap; margin: 0; line-height: 1.6;">${data.content}</p>
+                    </div>
+                `;
+            });
+            content += `</div>`;
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 700px; max-height: 80vh;">
+                    <div class="modal-header">
+                        <h2 style="color: var(--accent);">All Team Notes</h2>
+                        <button class="close-btn" onclick="this.parentElement.parentElement.parentElement.remove()">&times;</button>
+                    </div>
+                    <div style="overflow-y: auto; max-height: calc(80vh - 150px);">
+                        ${content}
+                    </div>
+                    <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function exportData() {
+            if (teamsData.length === 0) {
+                showMessage('No data to export', 'error');
+                return;
+            }
+            window.location.href = `${API_BASE}/export-all`;
+        }
+
+        function updateDataCount() {
+            document.getElementById('dataCount').textContent = `${teamsData.length} Teams`;
+        }
+
+        function showMessage(message, type = 'success') {
+            const msg = document.createElement('div');
+            msg.className = `status-message ${type}`;
+            msg.textContent = message;
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 3000);
+        }
+
+        updateDataCount();
+    </script>
+</body>
+</html>
